@@ -1,4 +1,4 @@
-A|-B->A
+A->G,H|L,A,H->J->F|-B->A
 A->B->A
 A
 B->A

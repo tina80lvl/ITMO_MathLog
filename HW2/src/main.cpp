@@ -1,3 +1,4 @@
+// HW2
 #include <iostream>
 #include <string>
 #include <map>
@@ -51,17 +52,17 @@ struct Node {
         if (l && l->ptrCnt == 0) delete l;
         if (r && r->ptrCnt == 0) delete r;
     }
-    std::string getAsString(bool isMain = true) {
+    std::string get_as_string(bool isMain = true) {
         std::string result = "";
         if (!is_variable(s) && !isMain) {
             result += "(";
         }
         if (l) {
-            result += l->getAsString(false);
+            result += l->get_as_string(false);
         }
         result += s;
         if (r) {
-            result += r->getAsString(false);
+            result += r->get_as_string(false);
         }
         if (!is_variable(s) && !isMain) {
             result += ")";
@@ -162,7 +163,8 @@ Node * parse_string_to_formula(const std::string &s) {
     int ptr = 0;
     return parse_expr(s, ptr);
 }
-
+// std::string last_assumption;
+int turniket = -1, last_comma = -1;
 void parse_header(const std::string & header, std::vector<Node *> & supposes, Node *& alpha, Node *& betta) {
     std::string loc_s;
     int loc_id = -1;
@@ -173,13 +175,16 @@ void parse_header(const std::string & header, std::vector<Node *> & supposes, No
             s += header[i];
             i++;
             if (header[i] == '|' && header[i + 1] == '-') {
+                turniket = i;
                 loc_id = i - s.length();
                 loc_s = s;
+                // last_assumption = s;
                 break;
             }
         }
         Node * expr = parse_expr(s, ptr);
         if (header[i] == ',') {
+            last_comma = i;
             i++;
             supposes.push_back(expr);
         } else if (header[i] == '|'){
@@ -191,14 +196,32 @@ void parse_header(const std::string & header, std::vector<Node *> & supposes, No
     }
     
 }
+void print_header (std::string header) { // may be too long
+    for (int i = 0; i < last_comma; ++i) {
+        std::cout << header[i];
+    }
+    std::cout << "|-";
+    std::string left, right;
+    for (int i = last_comma + 1; i < turniket; ++i) {
+        left += header[i];
+    }
+    // std::cerr << left << " ";
+    left = parse_string_to_formula(left)->get_as_string();
+    // std::cerr << left << std::endl;
+    for (int i = turniket + 2; i < header.length(); ++i) {
+        right += header[i];
+    }
+    right = parse_string_to_formula("(" + left + ")->" + right)->get_as_string();
+    std::cout << right << std::endl;
+}
 
 void Print(Node * v) {
     if (v) {
-        std::cout << v->getAsString();
+        std::cout << v->get_as_string();
     }
 }
 
-bool fill_map(Node * formula, Node * template_, std::map<std::string, std::vector<Node *>> &variableMap) {
+bool fill_map(Node * formula, Node * template_, std::map<std::string, std::vector<Node *> > &variableMap) {
     if (formula == NULL && template_ == NULL) {
         return true;
     }
@@ -222,7 +245,7 @@ bool fill_map(Node * formula, Node * template_, std::map<std::string, std::vecto
 }
 
 bool check_formula_is_similar_to_template(Node * formula, Node * template_) {
-    std::map<std::string, std::vector<Node*>> variableMap;
+    std::map<std::string, std::vector<Node*> > variableMap;
     if (fill_map(formula, template_, variableMap)) {
         for (auto& it : variableMap) {
             std::vector<Node*> &nodes = it.second;
@@ -255,7 +278,8 @@ bool check_is_assumption(Node * expr, std::vector<Node *> & supposes) {
     return false;
 }
 
-std::pair<int, int> check_MP(int id) {
+std::map<std::string, int> already_proven;
+std::pair<int, int> check_MP(int id) { // slow
     for (int i = id - 1; i >= 0; i--) {
         Node * AB = formulas[i];
         if (AB && AB->s == "->" && AB->r && formulas[id] && check_equal(AB->r, formulas[id])) {
@@ -294,10 +318,9 @@ void init_assumptions(std::string s) {
     for (int i = 0; i < s.length(); i++) {
         std::string var;
         for (int j = 0; i + j < s.length(); j++) {
-            // std::cerr << "~~~ " << var << " ~~~\n";
-            // std::cerr << "``` " << s[i + j] << " ```\n";
-            if (s[i + j] == '|') {
+            if (s[i + j] == '|' && s[i + j + 1] == '-') {
                 if (var.length() > 0) {
+                    var = parse_string_to_formula(var)->get_as_string();
                     is_assumption[var] = ass_cnt;
                     ass_cnt++;
                 }
@@ -305,12 +328,21 @@ void init_assumptions(std::string s) {
             }
             if (s[i + j] == ',') {
                 i += j;
+                var = parse_string_to_formula(var)->get_as_string();
                 is_assumption[var] = ass_cnt;
                 ass_cnt++;
                 break;
             }
             var += s[i + j]; 
         }
+    }
+}
+
+void print_assumptions () {
+    std::cerr << "Printing assumptions: \n";
+    for(auto it = is_assumption.cbegin(); it != is_assumption.cend(); ++it)
+    {
+        std::cerr<< it->first << " " << it->second << std::endl;
     }
 }
 
@@ -340,6 +372,7 @@ int main() {
     getline(std::cin, header);
     header = get_string_without_spaces(header);
     parse_header(header, assumptions, alpha, betta);
+    print_header(header);
 
     int cnt = 1;
     std::string s;
@@ -359,7 +392,6 @@ int main() {
             std::cout << std::endl;
             delete tmp;
         } else if (check_equal(expr, alpha)) {
-//                    out << "2:\n";
             // a -> (a -> a)
             tmp = new Node("->", alpha, new Node("->", alpha, alpha));
             Print(tmp); 
@@ -385,7 +417,6 @@ int main() {
             std::cout << std::endl;
             delete tmp;
         } else {
-//                    out << "3:\n";
             std::pair<int, int> mp = check_MP(cnt - 1);
             if (mp.first != -1) {
                 Node * dj = formulas[mp.first];
@@ -407,6 +438,7 @@ int main() {
                 throw "error";
             }
         }
+        already_proven[expr->get_as_string()] = cnt;
         tmp = new Node("->", alpha, expr);
         Print(tmp);
         std::cout << std::endl;
@@ -416,23 +448,3 @@ int main() {
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
