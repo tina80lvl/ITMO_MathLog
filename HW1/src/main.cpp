@@ -1,3 +1,4 @@
+// HW1
 #include <iostream>
 #include <string>
 #include <map>
@@ -187,7 +188,7 @@ void Print(Node * v) {
     // }
 }
 
-bool fill_map(Node * formula, Node * template_, std::map<std::string, std::vector<Node *>> &variableMap) {
+bool fill_map(Node * formula, Node * template_, std::map<std::string, std::vector<Node *> > &variableMap) {
     if (formula == NULL && template_ == NULL) {
         return true;
     }
@@ -211,7 +212,7 @@ bool fill_map(Node * formula, Node * template_, std::map<std::string, std::vecto
 }
 
 bool check_formula_is_similar_to_template(Node * formula, Node * template_) {
-    std::map<std::string, std::vector<Node*>> variableMap;
+    std::map<std::string, std::vector<Node*> > variableMap;
     if (fill_map(formula, template_, variableMap)) {
         for (auto& it : variableMap) {
             std::vector<Node*> &nodes = it.second;
@@ -235,11 +236,12 @@ int check_is_axiom(Node * v) {
     return -1;
 }
 
-std::pair<int, int> check_MP(int id) {
-    for (int i = id - 1; i >= 0; i--) {
+std::pair<int, int> check_MP(int id) { // здесь лажа
+    for (int i = id; i >= 0; i--) {
         Node * AB = formulas[i];
         if (AB && AB->s == "->" && AB->r && formulas[id] && check_equal(AB->r, formulas[id])) {
             for (int j = 0; j < id; j++) {
+                if (i == j) { continue; }
                 Node * A = formulas[j];
                 if (A && AB->l && check_equal(A, AB->l)) {
                     return std::make_pair(j, i);
@@ -247,6 +249,28 @@ std::pair<int, int> check_MP(int id) {
             }
         }
     }
+    // for (int i = id; i >= 0; i--) {
+    //     Node * AB = formulas[i];
+    //     if (AB && AB->s == "->" && AB->l && formulas[id] && check_equal(AB->l, formulas[id])) {
+    //         for (int j = 0; j < id; j++) {
+    //             Node * A = formulas[j];
+    //             if (A && AB->r && check_equal(A, AB->r)) {
+    //                 return std::make_pair(j, i);
+    //             }
+    //         }
+    //     }
+    // }
+    // for (int i = id; i >= 0; i--) {
+    //     Node * A = formulas[i];
+    //     if (A) {
+    //         for (int j = 0; j < id; j++) {
+    //             Node * AB = formulas[j];
+    //             if (AB && AB->s == "->" && AB->r && formulas[id] && check_equal(AB->r, formulas[id]) && check_equal(A, AB->l)) {
+    //                 return std::make_pair(i, j);
+    //             }
+    //         }
+    //     }
+    // }
     return std::make_pair(-1, -1);
 }
 
@@ -256,7 +280,6 @@ void init_axioms() {
     for (int i = 2; i < N * N; i++) {
         prime[i] = prime[i - 1] * prime[1];
     }
-    //check axioms!!!
     axioms[0] = parse_string_to_formula("A->B->A");
     axioms[1] = parse_string_to_formula("(A->B)->(A->B->C)->(A->C)");
     axioms[2] = parse_string_to_formula("A->B->A&B");
@@ -276,28 +299,42 @@ void print_axioms() {
 }
 
 void init_assumptions(std::string s) {
-    if (s[0] == '|') return;
+    if (s[0] == '|' && s[1] == '-') return;
     int ass_cnt = 1;
     for (int i = 0; i < s.length(); i++) {
         std::string var;
         for (int j = 0; i + j < s.length(); j++) {
-            // std::cerr << "~~~ " << var << " ~~~\n";
-            // std::cerr << "``` " << s[i + j] << " ```\n";
-            if (s[i + j] == '|') {
+            if (s[i + j] == '|' && s[i + j + 1] == '-') {
                 if (var.length() > 0) {
+                    // std::cerr << "|- found \n";
+                    // std::cerr << "i = " << i << ", j = " << j << ", var = " << var << std::endl;
+                    var = parse_string_to_formula(var)->get_as_string();
+                    // std::cerr << var << std::endl;
                     is_assumption[var] = ass_cnt;
                     ass_cnt++;
                 }
                 return;
             }
             if (s[i + j] == ',') {
+                // std::cerr << ", found \n";
                 i += j;
+                // std::cerr << "i = " << i << ", j = " << j << ", var = " << var << std::endl;
+                var = parse_string_to_formula(var)->get_as_string();
+                // std::cerr << var << std::endl;
                 is_assumption[var] = ass_cnt;
                 ass_cnt++;
                 break;
             }
             var += s[i + j]; 
         }
+    }
+}
+
+void print_assumptions () {
+    std::cerr << "Printing assumptions: \n";
+    for(auto it = is_assumption.cbegin(); it != is_assumption.cend(); ++it)
+    {
+        std::cerr<< it->first << " " << it->second << std::endl;
     }
 }
 
@@ -327,9 +364,11 @@ int main() {
     init_axioms();
     // print_axioms();
     init_assumptions(s);
+    // print_assumptions();
     while (getline(std::cin, s)) {
         // remove_if(s.begin(), s.end(), isspace);
         s = get_string_without_spaces(s);
+        // std::cerr << "Local expr: " << s << std::endl;
         // s = check_brackets(s);
         if (s.length() == 0) break;
         std::cout << "(" << cnt << ") ";
@@ -347,9 +386,9 @@ int main() {
                     // std::cout << (s[0] != '(' ? "(" : "") << s << (s[s.length() - 1] != '(' ? ")" : "");
                     std::cout << " (M.P. " << mp.second + 1 << ", " << mp.first + 1 << ")\n";
                 } else {
-                    if (is_assumption[s] > 0) {
+                    if (is_assumption[expr->get_as_string()] > 0) {
                         // std::cout << s;
-                        std::cout << " (Предп. " << is_assumption[s] << ")\n";
+                        std::cout << " (Предп. " << is_assumption[expr->get_as_string()] << ")\n";
                     }
                     else {
                     std::cout << " (Не доказано)\n";
