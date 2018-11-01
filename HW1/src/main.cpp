@@ -245,14 +245,6 @@ std::pair<int, int> check_MP(int id) {
                 already_proven[AB->get_as_string()] = id;
                 return std::make_pair(already_proven[(AB->l)->get_as_string()], i);
             }
-            // // may be not necessary
-            // for (int j = 0; j < id; j++) {
-            //     if (i == j) { continue; }
-            //     Node * A = formulas[j];
-            //     if (A && AB->l && check_equal(A, AB->l)) {
-            //         return std::make_pair(j, i);
-            //     }
-            // }
         }
     }
     return std::make_pair(-1, -1);
