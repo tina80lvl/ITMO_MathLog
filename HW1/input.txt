@@ -1,4 +1,4 @@
-A,!!B, UU,   F1,     A->B, A->B->C|-A&B
+A,!!B, UU,   F1,    A->B, A->B->F|-A&B
 B
 !B
 !!B

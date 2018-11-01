@@ -236,41 +236,25 @@ int check_is_axiom(Node * v) {
     return -1;
 }
 
-std::pair<int, int> check_MP(int id) { // здесь лажа
+std::map<std::string, int> already_proven;
+std::pair<int, int> check_MP(int id) {
     for (int i = id; i >= 0; i--) {
         Node * AB = formulas[i];
         if (AB && AB->s == "->" && AB->r && formulas[id] && check_equal(AB->r, formulas[id])) {
-            for (int j = 0; j < id; j++) {
-                if (i == j) { continue; }
-                Node * A = formulas[j];
-                if (A && AB->l && check_equal(A, AB->l)) {
-                    return std::make_pair(j, i);
-                }
+            if (already_proven.count((AB->l)->get_as_string()) > 0) {
+                already_proven[AB->get_as_string()] = id;
+                return std::make_pair(already_proven[(AB->l)->get_as_string()], i);
             }
+            // // may be not necessary
+            // for (int j = 0; j < id; j++) {
+            //     if (i == j) { continue; }
+            //     Node * A = formulas[j];
+            //     if (A && AB->l && check_equal(A, AB->l)) {
+            //         return std::make_pair(j, i);
+            //     }
+            // }
         }
     }
-    // for (int i = id; i >= 0; i--) {
-    //     Node * AB = formulas[i];
-    //     if (AB && AB->s == "->" && AB->l && formulas[id] && check_equal(AB->l, formulas[id])) {
-    //         for (int j = 0; j < id; j++) {
-    //             Node * A = formulas[j];
-    //             if (A && AB->r && check_equal(A, AB->r)) {
-    //                 return std::make_pair(j, i);
-    //             }
-    //         }
-    //     }
-    // }
-    // for (int i = id; i >= 0; i--) {
-    //     Node * A = formulas[i];
-    //     if (A) {
-    //         for (int j = 0; j < id; j++) {
-    //             Node * AB = formulas[j];
-    //             if (AB && AB->s == "->" && AB->r && formulas[id] && check_equal(AB->r, formulas[id]) && check_equal(A, AB->l)) {
-    //                 return std::make_pair(i, j);
-    //             }
-    //         }
-    //     }
-    // }
     return std::make_pair(-1, -1);
 }
 
@@ -328,6 +312,15 @@ void init_assumptions(std::string s) {
             var += s[i + j]; 
         }
     }
+}
+
+bool check_is_assumption(Node * expr, std::vector<Node *> & supposes) {
+    for (unsigned int i = 0; i < supposes.size(); i++) {
+        if (check_equal(expr, supposes[i])) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void print_assumptions () {
@@ -388,6 +381,7 @@ int main() {
                 } else {
                     if (is_assumption[expr->get_as_string()] > 0) {
                         // std::cout << s;
+
                         std::cout << " (Предп. " << is_assumption[expr->get_as_string()] << ")\n";
                     }
                     else {
@@ -395,6 +389,7 @@ int main() {
                     }
                 }
             }
+            already_proven[expr->get_as_string()] = cnt - 1;
         } catch(...) {
             std::cout << "error\n";
         }
