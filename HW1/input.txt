@@ -1,12 +1,6 @@
-A,!!B, UU,   F1,    A->B, A->B->F|-A&B
-B
-!B
-!!B
-A->B
-UU
-(A->(B->(A&B)))
+A,B|-A&B
 A
-F1
-(B->(A&B))
-(A->A)
-(A&B)
+B
+A->B->A&B
+B->A&B
+A&B
