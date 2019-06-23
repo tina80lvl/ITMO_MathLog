@@ -7,6 +7,7 @@ let (>>) x f = f x;;
 let hmap = Hashtbl.create 1000;;
 let found_vars = Hashtbl.create 1000;;
 
+(* --------------------------- start of Expression --------------------------- *)
 let match_exp' p expr1 expr2 = match (expr1,expr2) with
   | (Impl(l1,r1), Impl(l2,r2)) -> match p with
     | (_, false) -> p
@@ -37,6 +38,9 @@ let substitute lst tmpl =
     (*TODO*)
   in f mp tmpl;; (* was map from list [(a,b)] changed on map*)
 
+(* ---------------------------- end of Expression ---------------------------- *)
+
+(* ----------------------------- start of Axioms ----------------------------- *)
 let axiom_list = List.map parse [ "A -> B -> A"
                                 , "(A -> B) -> (A -> B -> C) -> (A -> C)"
                                 , "A -> B -> A & B"
@@ -48,7 +52,9 @@ let axiom_list = List.map parse [ "A -> B -> A"
                                 , "(A -> B) -> (A -> !B) -> !A"
                                 , "!!A -> A"
                                 ];;
+(* ----------------------------- start of Axioms ----------------------------- *)
 
+(* ---------------------------- start of Verifier ---------------------------- *)
 type annotation =
   | NotProoved
   | ByAxiom of int
@@ -99,6 +105,7 @@ let verify ax ass term =
           | _ -> an :: (ver (c+1) mm (Map.add t c m) ax ass term)
   in ver 0 (Hashtbl.create 1000) Map.empty ax ass term
   ;;
+(* ----------------------------- end of Verifier ----------------------------- *)
 
 let string_of_annotation ann =;;(* TODO *)
 
