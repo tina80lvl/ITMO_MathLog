@@ -107,14 +107,56 @@ let verify ax ass term =
   ;;
 (* ----------------------------- end of Verifier ----------------------------- *)
 
+(* ---------------------------- start of Deductor ---------------------------- *)
+let remake m ass expr ann = match ann with
+  | ByAxiom x -> [e, substitute [("A",e), ("B", ass)] ("A->B->A" >> Lexing.from_string >> Parser.main Lexer.main), Impl(ass,e)]
+  | ByAssumption x -> if ass <> e
+    then [e, substitute [("A",e), ("B", ass)] ("A->B->A" >> Lexing.from_string >> Parser.main Lexer.main), Impl(ass,e)]
+    else (* TODO: translate map ((substitude [("A", e)]) . parse) ["A->(A->A)"
+                    																							,"(A->A->A)->(A->(A->A)->A)->(A->A)"
+                    																							,"(A->(A->A)->A)->(A->A)"
+                    																							,"A->(A->A)->A"
+                    																							,"A->A"] *)
+  | ByModusPonens (j,k) -> let exact v = match v with
+    | None -> "Can't be" >> Lexing.from_string >> Parser.main Lexer.main
+    | Some t -> t
+    in (* TODO: analogically do not know what to do with map :(
+      map (substitude [("A", as), ("B", extract (M.lookup j m)), ("C", e)] . parse) ["(A->B)->((A->(B->C))->(A->C))"
+  																																									 ,"((A->(B->C))->(A->C))"
+  																																									 ,"A->C"
+  																																									 ] *)
+let deduct =
+  let f c m ass l1 l2 = match (l1,l2) with
+    | ([],[]) -> []
+    | 
+  c m ass (e::el) (a::al)
+
+(* ----------------------------- end of Deductor ----------------------------- *)
+
+
 let string_of_annotation ann =;;(* TODO *)
 
-let to_string lst =
+let to_string sep lst = match lst with
+  | [] -> ""
+  | [e] -> string_of_tree e
+  | e::xs -> string_of_tree e + sep + (to_string sep xs)
+  ;;
+
+let to_string_with_annotations lst =
   let t_s x lst = match lst with
     | [] -> ""
     | (a,b)::xs -> "(" + string_of_int x + ") " + a + " " + string_of_annotation b + "\n" + (t_s (x+1) xs)
   in t_s 0 lst
   ;;
+
+let parse_assumptions s =
+  let p_a buf lst = match lst with
+    | ('|'::'-'::s) -> [buf >> Lexing.from_string >> Parser.main Lexer.main]
+    | (','::s) -> (buf >> Lexing.from_string >> Parser.main Lexer.main)::(p_a "" s)
+    | c::s -> p_a (buf + [c]) s
+  in p_a ""
+  ;;
+
 
 (* let next_number = Stream.from (fun i -> Some (string_of_int i));;
 let expr_number expr = string_of_int Map.at expr;; *)
@@ -132,11 +174,12 @@ let string_of_tree tree =
 let (ic,oc) = (open_in "input.txt", open_out "output.txt");;
 
 (* TODO: translate:
-main = readFile "task1.in" >>= (return . toString . f) >>= writeFile "task1.out"
+main = readFile "task2.in" >>= (return . f) >>= writeFile "task2.out"
 	where
-		f s =
-			let lst = lines s
-				in zip lst (verify A.axiomList [] (map parse lst)) *)
+		f s = let lst = lines s in
+			let (h,t) = (parseAssumtions (head lst), map parse (tail lst)) in
+				let ans = deductLast h t in
+					(toString "," (tail h)) ++ "|-" ++ (show (last ans)) ++ "\n" ++ (toString "\n") ans *)
 ic >> input_line >> Lexing.from_string >> Parser.main Lexer.main >> string_of_tree >> fprintf oc "%s\n";;
 
 close_out oc;;
