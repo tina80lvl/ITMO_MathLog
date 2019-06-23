@@ -128,8 +128,18 @@ let remake m ass expr ann = match ann with
 let deduct =
   let f c m ass l1 l2 = match (l1,l2) with
     | ([],[]) -> []
-    | 
-  c m ass (e::el) (a::al)
+    | ((e::el),(a::al)) -> (remake m as e a) + (f (c+1) (Map.add c e m) ass el al)
+  in f 0 Map.empty
+  ;;
+
+let deduct_last a b = deduct (hd a) b (verify axiom_list a b);;
+
+let deduct_all l e =
+  let d_a lst expr = match lst with
+    | [] -> expr
+    | a::ass -> deduct_all ass e
+  in d_a (reverse l) e
+  ;;
 
 (* ----------------------------- end of Deductor ----------------------------- *)
 
